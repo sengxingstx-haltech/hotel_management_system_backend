@@ -6,8 +6,10 @@ from django.contrib.auth.models import (
 from common.models.base_models import BaseModel
 from django.db import models
 
+from common.models.soft_delete_models import SoftDeleteManager
 
-class UserManager(BaseUserManager):
+
+class UserManager(BaseUserManager, SoftDeleteManager):
     def create_user(self, email, first_name=None, last_name=None, password=None, **extra_fields):
         if not email:
             raise ValueError(_("The Email field must be set"))

@@ -53,7 +53,7 @@ class Guest(BaseModel):
 
 class RoomType(BaseModel):
     name = models.CharField(max_length=50)
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, null=True, blank=True)
     price_per_night = models.DecimalField(max_digits=9, decimal_places=2, default=0)
     capacity = models.PositiveSmallIntegerField()
 
@@ -76,7 +76,7 @@ class Room(BaseModel):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=AVAILABLE)
 
     def __str__(self):
-        return self.status
+        return self.room_number
 
 
 class Booking(BaseModel):
@@ -87,7 +87,7 @@ class Booking(BaseModel):
     total_price = models.DecimalField(max_digits=9, decimal_places=2, default=0)
 
     def __str__(self):
-        return self.room
+        return f'{self.guest} booking for {self.room}'
 
 
 class Payment(BaseModel):

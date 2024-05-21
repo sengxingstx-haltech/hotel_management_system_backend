@@ -20,7 +20,7 @@ def get_settings():
 
 class SoftDeleteQuerySet(models.query.QuerySet):
     def delete(self, cascade=None):
-        cascade = get_settings()['cascade']
+        cascade = get_settings().get('cascade', True)
         if cascade:  # delete one by one if cascade
             for obj in self.all():
                 obj.delete(cascade=cascade)
@@ -57,30 +57,28 @@ class SoftDeleteModel(models.Model):
     objects = SoftDeleteManager()
     deleted_objects = DeletedManager()
     all_objects = GlobalManager()
-    # global_objects = GlobalManager()
 
     class Meta:
         abstract = True
+        ordering = ['-updated_at']
 
     def delete(self, cascade=None, *args, **kwargs):
-        cascade = get_settings()['cascade']
+        cascade = get_settings().get('cascade', True)
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.save()
         self.after_delete()
         if cascade:
             self.delete_related_objects()
-        # TODO: Call soft_delete_signals
 
     def restore(self, cascade=None):
-        cascade = get_settings()['cascade']
+        cascade = get_settings().get('cascade', True)
         self.is_deleted = False
         self.deleted_at = None
         self.save()
         self.after_restore()
         if cascade:
             self.restore_related_objects()
-        # TODO: Call soft_delete_signals
 
     def hard_delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -96,8 +94,8 @@ class SoftDeleteModel(models.Model):
         for reverse_attribute in reverse_attributes:
             try:
                 related_objects.extend(list(getattr(self, reverse_attribute).all()))
-            except:
-                pass
+            except Exception as e:
+                pass  # Consider logging the exception
         return related_objects
 
     def delete_related_objects(self):

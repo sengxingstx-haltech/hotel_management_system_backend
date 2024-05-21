@@ -1,8 +1,11 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import status
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import Group, Permission
+from django.http import Http404
 from .models import User
 from .serializers import (
     GroupSerializer,
@@ -11,17 +14,7 @@ from .serializers import (
     UserRegisterSerializer,
     UserSerializer,
 )
-from .permissions import UserPermissions
-
-
-class GroupViewSet(ModelViewSet):
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-
-
-class PermissionViewSet(ModelViewSet):
-    queryset = Permission.objects.all()
-    serializer_class = PermissionSerializer
+from common.viewsets.base_viewsets import BaseModelViewSet
 
 
 class UserTokenObtainPairView(TokenObtainPairView):
@@ -48,13 +41,6 @@ class UserRegisterView(CreateAPIView):
     serializer_class = UserRegisterSerializer
 
 
-class UserViewSet(ModelViewSet):
-    queryset = User.objects.all().order_by('-updated_at')
-    serializer_class = UserSerializer
-    permission_classes = [UserPermissions]
-    # required_permissions = ['auth.view_user', 'auth.edit_user']
-
-
 class UserMeView(RetrieveUpdateAPIView):
     # authentication_classes = [SessionAuthentication, BasicAuthentication]
     serializer_class = UserSerializer
@@ -62,3 +48,61 @@ class UserMeView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserViewSet(BaseModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        # For normal operations, use the default queryset
+        if self.action in ['restore', 'hard_delete']:
+            return User.all_objects.all()
+        return User.objects.all()
+
+    def get_object(self):
+        # Override to fetch from all_objects
+        queryset = self.filter_queryset(self.get_queryset())
+        obj = queryset.get(pk=self.kwargs["pk"])
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def _get_user_or_404(self, pk):
+        try:
+            user = User.all_objects.get(pk=pk)
+            self.check_object_permissions(self.request, user)
+            return user
+        except User.DoesNotExist:
+            raise Http404("User not found")
+
+    @action(detail=False, methods=['get'], url_path='soft-delete')
+    def soft_delete(self, request):
+        deleted_users = User.deleted_objects.all()
+        serializer = self.get_serializer(deleted_users, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='restore')
+    def restore(self, request, pk=None):
+        user = self._get_user_or_404(pk)
+
+        if user.is_deleted:
+            user.restore()
+            return Response({'status': 'user restored'}, status=status.HTTP_200_OK)
+        return Response({'status': 'user is not deleted'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'], url_path='hard-delete')
+    def hard_delete(self, request, pk=None):
+        user = self._get_user_or_404(pk)
+
+        user.hard_delete()
+        return Response({'status': 'user permanently deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupViewSet(BaseModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+
+
+class PermissionViewSet(BaseModelViewSet):
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer

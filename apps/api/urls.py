@@ -10,18 +10,27 @@ from apps.accounts.views import (
     GroupViewSet,
     PermissionViewSet,
 )
+from apps.hotel.views import (
+    HotelViewSet,
+    StaffViewSet,
+    GuestViewSet,
+    RoomTypeViewSet,
+    RoomViewSet,
+    BookingViewSet,
+    PaymentViewSet,
+)
 from .views import APIRootView
 
 
-app_name = 'accounts'
+app_name = 'api'
 
 
 # Create a custom router by inheriting from DefaultRouter
-class CustomRouter(DefaultRouter):
-    def get_api_root_view(self, api_urls=None):
-        root_view = super().get_api_root_view(api_urls)
-        root_view.cls.__doc__ = "Your custom API root description here."
-        return root_view
+# class CustomRouter(DefaultRouter):
+#     def get_api_root_view(self, api_urls=None):
+#         root_view = super().get_api_root_view(api_urls)
+#         root_view.cls.__doc__ = "Your custom API root description here."
+#         return root_view
 
 
 # router = CustomRouter()
@@ -29,6 +38,13 @@ router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'groups', GroupViewSet)
 router.register(r'permissions', PermissionViewSet)
+router.register(r'hotels', HotelViewSet)
+router.register(r'staff', StaffViewSet)
+router.register(r'guests', GuestViewSet)
+router.register(r'room-types', RoomTypeViewSet)
+router.register(r'rooms', RoomViewSet)
+router.register(r'bookings', BookingViewSet)
+router.register(r'payments', PaymentViewSet)
 
 urlpatterns = [
     path('', APIRootView.as_view(), name='api-root-view'),
