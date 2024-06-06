@@ -1,4 +1,7 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from common.models.base_models import BaseModel
 
 
@@ -88,6 +91,22 @@ class Booking(BaseModel):
 
     def __str__(self):
         return f'{self.guest} booking for {self.room}'
+
+    def clean(self):
+        super().clean()
+
+        if self.check_out_date <= self.check_in_date:
+            raise ValidationError(
+                {'check_out_date': _('Check-out date must be after check-in date.')}
+            )
+
+        if self.check_in_date < timezone.now().date():
+            raise ValidationError({'check_in_date': _('Check-in date cannot be in the past.')})
+
+    def save(self, *args, **kwargs):
+        # Validate the model
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Payment(BaseModel):

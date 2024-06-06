@@ -24,6 +24,13 @@ class PageNumberResultsSetPagination(PageNumberPagination):
     max_page_size = 50
     page_query_param = 'page'  # Can change to anything that you want
 
+    def paginate_queryset(self, queryset, request, view=None):
+        # Apply default ordering to the queryset
+        queryset = queryset.order_by(
+            '-updated_at'
+        )  # Change 'updated_at' to your desired field for ordering
+        return super().paginate_queryset(queryset, request, view)
+
     # def get_paginated_response(self, data):
     #     return Response(
     #         {

@@ -44,6 +44,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_celery_beat',
 ]
 
 PROJECT_APPS = [
@@ -179,5 +180,25 @@ MEDIA_ROOT = BASE_DIR / 'mediafiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 AUTH_USER_MODEL = 'accounts.User'
+
+# Celery settings
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')  # Use Redis as the broker
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')
+
+# Django-Celery-Beat settings
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+from celery.schedules import crontab
+
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    'update-room-status-every-minute': {
+        'task': 'apps.hotel.tasks.update_room_status',
+        'schedule': crontab(minute='*'),  # Every minute
+    },
+    # 'update-room-status-every-midnight': {
+    #     'task': 'apps.hotel.tasks.update_room_status',
+    #     'schedule': crontab(minute=0, hour=0),  # Every midnight
+    # },
+}

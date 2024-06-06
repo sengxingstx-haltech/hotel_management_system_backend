@@ -78,6 +78,14 @@ class UserViewSet(BaseModelViewSet):
     @action(detail=False, methods=['get'], url_path='soft-delete')
     def soft_delete(self, request):
         deleted_users = User.deleted_objects.all()
+
+        # Paginate the queryset of deleted instances
+        page = self.paginate_queryset(deleted_users)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(deleted_users, many=True)
         return Response(serializer.data)
 
