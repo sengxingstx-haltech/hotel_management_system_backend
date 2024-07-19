@@ -1,9 +1,16 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
+
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from .models import User
 
 
@@ -112,4 +119,78 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
 
+        return user
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, validators=[validate_password])
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError('Old password is not correct')
+        return value
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        user = User.objects.filter(email=value).first()
+        if user is None:
+            raise serializers.ValidationError('User with this email does not exist')
+        return value
+
+    def save(self, **kwargs):
+        user = User.objects.get(email=self.validated_data['email'])
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_link = f'http://your-frontend-url/reset-password-confirm/{uid}/{token}/'
+
+        # Render email content
+        subject = 'Password Reset'
+        from_email = 'webmaster@example.com'
+        to_email = user.email
+        context = {
+            'user': user,
+            'reset_link': reset_link,
+        }
+        text_content = render_to_string('email/password_reset_email.txt', context)
+        html_content = render_to_string('email/password_reset_email.html', context)
+
+        # Send email
+        email = EmailMultiAlternatives(subject, text_content, from_email, [to_email])
+        email.attach_alternative(html_content, 'text/html')
+        email.send()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField()
+
+    def validate(self, attrs):
+        try:
+            uid = force_str(urlsafe_base64_decode(attrs['uid']))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError("Invalid token")
+
+        if not default_token_generator.check_token(user, attrs['token']):
+            raise serializers.ValidationError("Invalid token or token expired")
+
+        return attrs
+
+    def save(self, **kwargs):
+        uid = self.validated_data['uid']
+        user = User.objects.get(pk=force_str(urlsafe_base64_decode(uid)))
+        user.set_password(self.validated_data['new_password'])
+        user.save()
         return user

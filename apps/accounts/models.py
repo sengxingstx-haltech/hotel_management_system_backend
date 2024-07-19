@@ -3,10 +3,12 @@ from django.contrib.auth.models import (
     AbstractUser,
     BaseUserManager,
 )
-from common.models.base_models import BaseModel
 from django.db import models
 
+from common.models.base_models import BaseModel
 from common.models.soft_delete_models import SoftDeleteManager
+from common.validators import validate_max_file_size, validate_image_extension
+from .utils import profile_image_storage
 
 
 class UserManager(BaseUserManager, SoftDeleteManager):
@@ -35,6 +37,12 @@ class UserManager(BaseUserManager, SoftDeleteManager):
 class User(AbstractUser, BaseModel):
     username = None
     email = models.EmailField(_("email address"), unique=True)
+    avatar = models.FileField(
+        upload_to=profile_image_storage,
+        validators=[validate_image_extension, validate_max_file_size],
+        blank=True,
+        null=True,
+    )
 
     objects = UserManager()
 

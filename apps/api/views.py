@@ -9,8 +9,12 @@ class APIRootView(APIView):
             'auth': {
                 'signin': reverse('api:auth-signin', request=request),
                 'register': reverse('api:auth-register', request=request),
-                # 'logout': reverse('api:logout', request=request, format=format),
-                # 'password_change': reverse('api:password_change', request=request, format=format),
+                'logout': reverse('api:logout', request=request),
+                'change-password': reverse('api:change-password', request=request),
+                'reset-password': reverse('api:reset-password', request=request),
+                'reset-password-confirm': reverse(
+                    'api:reset-password-confirm', request=request, format=None
+                ),
                 'refresh_token': reverse('api:token_refresh', request=request),
                 'auth-me': reverse('api:auth-me', request=request, format=None),
             },

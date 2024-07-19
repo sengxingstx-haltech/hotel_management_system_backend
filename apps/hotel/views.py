@@ -14,16 +14,19 @@ from .serializers import (
 )
 from common.viewsets.base_viewsets import BaseModelViewSet
 from common.mixins import SoftDeleteMixin
+from .permissions import HotelPermissions, StaffPermissions
 
 
 class HotelViewSet(BaseModelViewSet, SoftDeleteMixin):
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
+    permission_classes = [HotelPermissions]
 
 
 class StaffViewSet(BaseModelViewSet, SoftDeleteMixin):
     queryset = Staff.objects.all()
     serializer_class = StaffSerializer
+    permission_classes = [StaffPermissions]
 
 
 class GuestViewSet(BaseModelViewSet, SoftDeleteMixin):

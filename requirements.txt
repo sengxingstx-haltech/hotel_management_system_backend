@@ -15,6 +15,7 @@ django-timezone-field==6.1.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 kombu==5.3.7
+pillow==10.4.0
 prompt_toolkit==3.0.46
 PyJWT==2.8.0
 python-crontab==3.1.0

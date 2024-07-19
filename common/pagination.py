@@ -25,10 +25,16 @@ class PageNumberResultsSetPagination(PageNumberPagination):
     page_query_param = 'page'  # Can change to anything that you want
 
     def paginate_queryset(self, queryset, request, view=None):
-        # Apply default ordering to the queryset
-        queryset = queryset.order_by(
-            '-updated_at'
-        )  # Change 'updated_at' to your desired field for ordering
+        # Check if 'updated_at' field exists in the model
+        model = queryset.model
+
+        if hasattr(model, 'updated_at'):
+            # Order by 'updated_at' if it exists
+            queryset = queryset.order_by('-updated_at')
+        else:
+            # Otherwise, order by 'id'
+            queryset = queryset.order_by('-id')
+
         return super().paginate_queryset(queryset, request, view)
 
     # def get_paginated_response(self, data):
