@@ -11,6 +11,7 @@ colorama==0.4.6
 cron-descriptor==1.4.3
 Django==4.2.6
 django-celery-beat==2.6.0
+django-cors-headers==4.4.0
 django-timezone-field==6.1.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1

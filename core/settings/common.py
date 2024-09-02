@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab
 from datetime import timedelta
 from dotenv import load_dotenv
 import os
@@ -44,8 +45,9 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
-    # 'rest_framework_simplejwt.token_blacklist',
+    'rest_framework_simplejwt.token_blacklist',
     'django_celery_beat',
+    'corsheaders',
 ]
 
 PROJECT_APPS = [
@@ -60,6 +62,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -187,14 +190,21 @@ AUTH_USER_MODEL = 'accounts.User'
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # e.g (2.5 MB * 1024 * 1024) = 2621440
 
+CORS_ALLOWED_ORIGINS = []
+CSRF_TRUSTED_ORIGINS = []
+
+CORS_CSRF_ORIGINS = os.environ.get('CORS_CSRF_ORIGINS')
+
+if CORS_CSRF_ORIGINS:
+    CORS_ALLOWED_ORIGINS += CORS_CSRF_ORIGINS.split(',')
+    CSRF_TRUSTED_ORIGINS += CORS_CSRF_ORIGINS.split(',')
+
 # Celery settings
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')  # Use Redis as the broker
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')
 
 # Django-Celery-Beat settings
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-from celery.schedules import crontab
 
 # Celery Beat Schedule
 CELERY_BEAT_SCHEDULE = {
